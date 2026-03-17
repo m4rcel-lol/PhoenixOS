@@ -151,8 +151,6 @@ static int vsnprintk(char *buf, usize max, const char *fmt, __builtin_va_list ap
 
 /* ── Public API ───────────────────────────────────────────────────────────── */
 
-bool console_ready = false;
-
 void early_printk(const char *fmt, ...) {
     __builtin_va_list ap;
     __builtin_va_start(ap, fmt);
