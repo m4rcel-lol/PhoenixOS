@@ -1,4 +1,5 @@
 #include "../include/kernel.h"
+#include "../include/fs.h"
 #include "../include/mm.h"
 #include "../include/sched.h"
 
