@@ -1,7 +1,7 @@
 #ifndef ARCH_X86_64_IDT_H
 #define ARCH_X86_64_IDT_H
 
-#include <kernel/include/kernel.h>
+#include "../../include/kernel.h"
 
 /* ── IDT gate types ───────────────────────────────────────────────────────── */
 

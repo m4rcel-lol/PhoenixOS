@@ -1,5 +1,8 @@
 #include "include/libflame.h"
 
+/* syscall is declared in libflame.h; used below to write to stdout */
+extern long syscall(long number, ...);
+
 /* ── Internal: format one conversion ─────────────────────────────────────── */
 
 static int emit_char(char **out, char *end, char c) {
@@ -21,7 +24,6 @@ static void ctx_emit(fmt_ctx *ctx, char c) {
             *ctx->buf++ = c;
     } else {
         /* write to fd 1 */
-        extern long syscall(long, ...);
         char ch = c;
         syscall(1 /* SYS_WRITE */, 1, &ch, 1);
     }

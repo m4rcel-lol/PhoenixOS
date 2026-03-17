@@ -112,4 +112,3 @@ PhoenixOS/
 ## License
 
 MIT — see [LICENSE](LICENSE).
-PhoenixOS is a custom OS

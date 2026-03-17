@@ -2,7 +2,6 @@
 members = [
     "phx-pkgmgr",
     "phx-svcmon",
-    "phx-netd",
 ]
 
 resolver = "2"
