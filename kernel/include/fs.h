@@ -52,6 +52,7 @@ struct inode {
     void *fs_data;       /* filesystem-private pointer */
     struct super_block   *sb;
     struct inode_ops     *ops;
+    struct file_ops      *fops; /* file operations for open files */
 };
 
 /* ── Directory entry ──────────────────────────────────────────────────────── */
@@ -76,6 +77,8 @@ struct file {
 };
 
 /* ── File operations ──────────────────────────────────────────────────────── */
+
+struct dirent;   /* forward declaration — full definition below */
 
 struct file_ops {
     ssize (*read)(struct file *f, void *buf, usize len);

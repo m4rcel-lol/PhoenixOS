@@ -154,6 +154,8 @@ static usize ext2_read_inode_data(struct ext2_fs *fs, struct ext2_inode *in,
 
 /* ── VFS inode operations ─────────────────────────────────────────────────── */
 
+static struct file_ops ext2_file_ops; /* forward declaration */
+
 static struct inode *ext2_lookup(struct inode *dir_inode, const char *name) {
     struct ext2_fs *fs = (struct ext2_fs *)dir_inode->sb->fs_data;
     struct ext2_inode *in = (struct ext2_inode *)dir_inode->fs_data;
@@ -192,6 +194,7 @@ static struct inode *ext2_lookup(struct inode *dir_inode, const char *name) {
                     vnode->nlink = ei->i_links_count;
                     vnode->sb    = dir_inode->sb;
                     vnode->ops   = dir_inode->ops;
+                    vnode->fops  = &ext2_file_ops;
                     vnode->fs_data = ei;
                     return vnode;
                 }
@@ -252,11 +255,12 @@ static struct super_block *ext2_mount(void *device) {
     /* Read root inode */
     struct ext2_inode *root_in = ext2_get_inode(fs, EXT2_ROOT_INO);
 
-    struct inode *root_inode = (struct inode *)kzmalloc(sizeof(*inode));
+    struct inode *root_inode = (struct inode *)kzmalloc(sizeof(*root_inode));
     root_inode->ino   = EXT2_ROOT_INO;
     root_inode->mode  = root_in->i_mode;
     root_inode->size  = root_in->i_size;
     root_inode->ops   = &ext2_inode_ops;
+    root_inode->fops  = &ext2_file_ops;
     root_inode->fs_data = root_in;
 
     struct dentry *root_dentry = (struct dentry *)kzmalloc(sizeof(*root_dentry));

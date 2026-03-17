@@ -158,7 +158,7 @@ int vfs_open(const char *path, int flags) {
     f->dentry    = de;
     f->flags     = flags;
     f->ref_count = 1;
-    f->ops       = NULL;   /* set by FS driver */
+    f->ops       = de->inode->fops;   /* set by FS driver via inode->fops */
 
     struct task_struct *t = task_get_current();
     if (!t) { kfree(f); return -EINVAL; }
