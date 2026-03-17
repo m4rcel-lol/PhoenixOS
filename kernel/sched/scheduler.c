@@ -1,6 +1,7 @@
 #include "../include/kernel.h"
 #include "../include/sched.h"
 #include "../include/mm.h"
+#include "../include/timer.h"
 
 /* ── Task table ───────────────────────────────────────────────────────────── */
 
@@ -167,19 +168,17 @@ void schedule(void) {
     if (prev && prev->state == TASK_RUNNING) prev->state = TASK_READY;
 
     if (prev)
-        switch_context(&prev->kernel_rsp, (u64)next->kernel_rsp);
+        switch_context(&prev->kernel_rsp, next->kernel_rsp);
     else {
         /* First schedule — fake old RSP */
         u64 *dummy = NULL;
-        switch_context(&dummy, (u64)next->kernel_rsp);
+        switch_context(&dummy, next->kernel_rsp);
     }
 }
 
 /* ── sched_tick (called from timer IRQ) ──────────────────────────────────── */
 
 void sched_tick(void) {
-    extern volatile u64 timer_ticks;
-
     /* Wake sleeping tasks */
     for (int i = 0; i < MAX_TASKS; i++) {
         struct task_struct *t = &task_pool[i];
@@ -212,10 +211,8 @@ void task_exit(u32 exit_code) {
 /* ── task_sleep ───────────────────────────────────────────────────────────── */
 
 void task_sleep(u32 ms) {
-    extern volatile u64 timer_ticks;
-    extern u32 ticks_per_ms;
     if (!current_task) return;
-    current_task->wake_tick = timer_ticks + (u64)ms;
+    current_task->wake_tick = timer_ticks + ((u64)ms * ticks_per_ms);
     current_task->state     = TASK_SLEEPING;
     schedule();
 }

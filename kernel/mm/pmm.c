@@ -9,7 +9,6 @@
 static u64  bitmap[BITMAP_WORDS];      /* 1 bit per page; 1 = free, 0 = used */
 static u64  total_pages = 0;
 static u64  free_pages  = 0;
-static u64  bitmap_start_pfn = 0;     /* first PFN tracked */
 
 /* ── Bit helpers ──────────────────────────────────────────────────────────── */
 

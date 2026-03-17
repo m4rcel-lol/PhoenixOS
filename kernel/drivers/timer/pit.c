@@ -1,4 +1,5 @@
 #include "../../include/kernel.h"
+#include "../../include/timer.h"
 #include "../../arch/x86_64/include/asm.h"
 
 /* ── PIT constants ────────────────────────────────────────────────────────── */
@@ -12,7 +13,7 @@
 /* ── Tick counter ─────────────────────────────────────────────────────────── */
 
 volatile u64 timer_ticks = 0;
-static   u32 ticks_per_ms = 1;
+u32 ticks_per_ms = 1;
 
 /* ── Forward: scheduler tick ─────────────────────────────────────────────── */
 extern void sched_tick(void);
