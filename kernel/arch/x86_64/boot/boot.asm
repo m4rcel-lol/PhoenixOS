@@ -47,7 +47,7 @@ _start:
     mov  esi, ebx                           ; arg2: multiboot info ptr
 
     ; Set up a temporary 32-bit stack
-    mov  esp, stack32_top
+    mov  esp, stack32_top - KERNEL_VBASE
 
     ; Verify CPUID support (try toggling ID bit in EFLAGS)
     pushfd
@@ -75,33 +75,35 @@ _start:
 
     ; ── Set up 4-level paging ────────────────────────────────────────────────
     ; Zero page tables area
-    mov  edi, pml4_table
+    mov  edi, pml4_table - KERNEL_VBASE
     mov  ecx, 4096 * 3 / 4                 ; PML4 + PDPT + PD = 3 pages
     xor  eax, eax
     rep  stosd
 
     ; PML4[0]  -> PDPT_low  (identity map)
     ; PML4[511]-> PDPT_high (higher-half kernel)
-    mov  eax, pdpt_low
+    mov  eax, pdpt_low - KERNEL_VBASE
     or   eax, (PAGE_PRESENT | PAGE_WRITE)
-    mov  [pml4_table], eax
-    mov  [pml4_table + 511 * 8], eax       ; same PDPT for higher half
+    mov  [pml4_table - KERNEL_VBASE], eax
+    mov  [pml4_table - KERNEL_VBASE + 511 * 8], eax       ; same PDPT for higher half
 
-    ; PDPT[0]  -> PD[0] (covers 0 – 1 GB)
-    mov  eax, pd_table
+    ; PDPT[0]  -> PD[0] (covers 0 – 1 GB, identity mapping)
+    ; PDPT[510]-> PD[0] (covers 0xFFFFFFFF80000000, higher-half kernel)
+    mov  eax, pd_table - KERNEL_VBASE
     or   eax, (PAGE_PRESENT | PAGE_WRITE)
-    mov  [pdpt_low], eax
+    mov  [pdpt_low - KERNEL_VBASE], eax
+    mov  [pdpt_low - KERNEL_VBASE + 510 * 8], eax         ; higher-half PDPT entry
 
     ; PD[0] = 0x00000000..0x001FFFFF (2 MB huge page, covers kernel load addr)
-    mov  dword [pd_table], (0x00000000 | PAGE_PRESENT | PAGE_WRITE | PAGE_HUGE)
+    mov  dword [pd_table - KERNEL_VBASE], (0x00000000 | PAGE_PRESENT | PAGE_WRITE | PAGE_HUGE)
     ; PD[1] = 0x00200000..0x003FFFFF
-    mov  dword [pd_table + 8], (0x00200000 | PAGE_PRESENT | PAGE_WRITE | PAGE_HUGE)
+    mov  dword [pd_table - KERNEL_VBASE + 8], (0x00200000 | PAGE_PRESENT | PAGE_WRITE | PAGE_HUGE)
     ; Map a few more for safety
-    mov  dword [pd_table + 16], (0x00400000 | PAGE_PRESENT | PAGE_WRITE | PAGE_HUGE)
-    mov  dword [pd_table + 24], (0x00600000 | PAGE_PRESENT | PAGE_WRITE | PAGE_HUGE)
+    mov  dword [pd_table - KERNEL_VBASE + 16], (0x00400000 | PAGE_PRESENT | PAGE_WRITE | PAGE_HUGE)
+    mov  dword [pd_table - KERNEL_VBASE + 24], (0x00600000 | PAGE_PRESENT | PAGE_WRITE | PAGE_HUGE)
 
     ; Load PML4 into CR3
-    mov  eax, pml4_table
+    mov  eax, pml4_table - KERNEL_VBASE
     mov  cr3, eax
 
     ; Enable PAE in CR4
