@@ -42,14 +42,16 @@ static int remove_dir(const char *path) {
 }
 
 static int remove_path(const char *path) {
-    struct stat st;
-    if (lstat(path, &st) < 0) {
-        if (opt_force && errno == ENOENT) return 0;
-        fprintf(stderr, "rm: cannot stat '%s': %s\n", path, strerror(errno));
+    /* Try unlinking first; if it's a directory, handle that case. */
+    if (unlink(path) == 0) return 0;
+
+    if (errno == ENOENT) {
+        if (opt_force) return 0;
+        fprintf(stderr, "rm: cannot remove '%s': %s\n", path, strerror(errno));
         return 1;
     }
 
-    if (S_ISDIR(st.st_mode)) {
+    if (errno == EISDIR || errno == EPERM) {
         if (!opt_recursive) {
             fprintf(stderr, "rm: cannot remove '%s': Is a directory\n", path);
             return 1;
@@ -57,12 +59,8 @@ static int remove_path(const char *path) {
         return remove_dir(path);
     }
 
-    if (unlink(path) != 0) {
-        if (opt_force && errno == ENOENT) return 0;
-        fprintf(stderr, "rm: cannot remove '%s': %s\n", path, strerror(errno));
-        return 1;
-    }
-    return 0;
+    fprintf(stderr, "rm: cannot remove '%s': %s\n", path, strerror(errno));
+    return 1;
 }
 
 int main(int argc, char *argv[]) {
