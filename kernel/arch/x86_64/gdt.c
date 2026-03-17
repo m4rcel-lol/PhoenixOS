@@ -1,4 +1,4 @@
-#include "../include/kernel.h"
+#include "../../include/kernel.h"
 #include "arch/x86_64/include/gdt.h"
 #include "arch/x86_64/include/asm.h"
 
