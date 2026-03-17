@@ -123,8 +123,13 @@ _start:
     mov  cr0, eax
 
     ; Load 64-bit GDT and far jump to 64-bit code segment
-    lgdt [gdt64_ptr]
-    jmp  0x08:long_mode_entry              ; CS selector = 0x08
+    ; Use physical addresses here – we are still in 32-bit protected mode before
+    ; paging is active, so virtual addresses > 4 GB cannot be encoded in 32-bit
+    ; relocations.  gdt64_ptr_phys stores the GDT base as a 32-bit physical
+    ; address (gdt64 - KERNEL_VBASE); similarly the far-jump target is the
+    ; physical address of long_mode_entry.
+    lgdt [gdt64_ptr_phys - KERNEL_VBASE]
+    jmp  0x08:(long_mode_entry - KERNEL_VBASE) ; CS selector = 0x08
 
 .no_cpuid:
     mov  al, 'C'
@@ -177,6 +182,13 @@ gdt64_end:
 gdt64_ptr:
     dw  gdt64_end - gdt64 - 1
     dq  gdt64
+
+; Physical-address GDT pointer used by the 32-bit setup code before paging.
+; dd (32-bit) is used for the base so the relocation (R_X86_64_32) fits in the
+; 32-bit address space: gdt64_phys = gdt64_virt - KERNEL_VBASE < 4 GB.
+gdt64_ptr_phys:
+    dw  gdt64_end - gdt64 - 1
+    dd  gdt64 - KERNEL_VBASE
 
 ; ─── BSS / Stacks / Page Tables ─────────────────────────────────────────────
 section .bss
