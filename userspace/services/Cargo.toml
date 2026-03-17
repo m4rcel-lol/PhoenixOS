@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "phx-pkgmgr",
+    "phx-svcmon",
+]
+
+resolver = "2"

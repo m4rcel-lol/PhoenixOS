@@ -1,0 +1,8 @@
+[package]
+name = "phx-svcmon"
+version = "0.1.0"
+edition = "2021"
+description = "PhoenixOS service monitor daemon"
+authors = ["PhoenixOS Contributors"]
+
+[dependencies]

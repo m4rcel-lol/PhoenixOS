@@ -1,0 +1,8 @@
+[package]
+name = "phx-pkgmgr"
+version = "0.1.0"
+edition = "2021"
+description = "PhoenixOS package manager"
+authors = ["PhoenixOS Contributors"]
+
+[dependencies]
