@@ -45,6 +45,13 @@ typedef u8 bool;
 #define EMBER_VERSION_PATCH  0
 #define EMBER_VERSION_STR    "0.1.0"
 
+/* ── PhoenixOS release version ────────────────────────────────────────────── */
+
+#define PHOENIX_VERSION_MAJOR  0
+#define PHOENIX_VERSION_MINOR  0
+#define PHOENIX_VERSION_PATCH  2
+#define PHOENIX_VERSION_STR    "0.0.2"
+
 /* ── Alignment helpers ────────────────────────────────────────────────────── */
 
 #define ALIGN_UP(x, a)    (((x) + (a) - 1) & ~((a) - 1))
@@ -85,6 +92,19 @@ typedef u8 bool;
 #define SET_BIT(x, n)    ((x) |=  BIT(n))
 #define CLEAR_BIT(x, n)  ((x) &= ~BIT(n))
 #define TEST_BIT(x, n)   (!!((x) & BIT(n)))
+
+/* ── Kernel string / memory utilities ────────────────────────────────────── */
+
+void  *kmemset(void *dst, int c, usize n);
+void  *kmemcpy(void *dst, const void *src, usize n);
+int    kmemcmp(const void *a, const void *b, usize n);
+usize  kstrlen(const char *s);
+char  *kstrcpy(char *dst, const char *src);
+char  *kstrncpy(char *dst, const char *src, usize n);
+int    kstrcmp(const char *a, const char *b);
+int    kstrncmp(const char *a, const char *b, usize n);
+char  *kstrchr(const char *s, int c);
+char  *kstrrchr(const char *s, int c);
 
 /* ── Error codes ──────────────────────────────────────────────────────────── */
 

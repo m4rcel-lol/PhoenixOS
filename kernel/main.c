@@ -81,7 +81,8 @@ struct mb2_tag_string {
     "  ██╔══╝  ██║╚██╔╝██║██╔══██╗██╔══╝  ██╔══██╗\n" \
     "  ███████╗██║ ╚═╝ ██║██████╔╝███████╗██║  ██║\n" \
     "  ╚══════╝╚═╝     ╚═╝╚═════╝ ╚══════╝╚═╝  ╚═╝\n" \
-    "  EmberKernel v" EMBER_VERSION_STR " — PhoenixOS\n\n"
+    "  EmberKernel v" EMBER_VERSION_STR \
+    "  —  PhoenixOS v" PHOENIX_VERSION_STR "\n\n"
 
 /* ── Forward declarations for drivers ────────────────────────────────────────*/
 
@@ -95,6 +96,8 @@ void gpu_init(void);
 void wifi_init(void);
 void bluetooth_init(void);
 void ext2_register(void);
+void acpi_init(void);
+void procfs_register(void);
 
 /* ── Idle task entry ──────────────────────────────────────────────────────── */
 
@@ -217,6 +220,11 @@ void kernel_start(u32 mb2_magic, u64 mb2_info) {
     printk("[vfs ] Initializing VFS...\n");
     vfs_init();
     ext2_register();
+    procfs_register();
+
+    /* ── ACPI power management ── */
+    printk("[acpi] Probing ACPI...\n");
+    acpi_init();
 
     /* ── Scheduler ── */
     printk("[sched] Initializing scheduler...\n");
