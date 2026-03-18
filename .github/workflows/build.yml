@@ -11,6 +11,52 @@ on:
       - master
 
 jobs:
+  # ── S language compiler (host-only, no cross-compiler needed) ───────────────
+  sc-compiler:
+    name: Build S compiler & run tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build sc compiler
+        run: make -C tools/s-lang
+
+      - name: Transpile examples
+        run: |
+          cd tools/s-lang
+          ./sc examples/hello.s       --emit-c > /dev/null
+          ./sc examples/fibonacci.s   --emit-c > /dev/null
+          ./sc examples/kernel-demo.s --emit-c > /dev/null
+          echo "All examples transpile OK"
+
+      - name: Build and run examples
+        run: make -C tools/s-lang examples test
+
+      - name: Run sc unit tests
+        run: |
+          cd tools/s-lang/tests
+          gcc -O2 -Wall -std=c11 -o test_sc test_sc.c
+          ./test_sc ../sc
+
+  # ── Kernel unit tests (host compiler, no cross-compiler needed) ─────────────
+  kernel-tests:
+    name: Kernel unit tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run kernel unit tests
+        run: make test
+
+  # ── Full OS build (requires cross-compiler) ──────────────────────────────────
   build:
     name: Build ISO
     runs-on: ubuntu-latest
@@ -104,6 +150,12 @@ jobs:
       # ── Build ──────────────────────────────────────────────────────────────
       - name: Add cross-compiler to PATH
         run: echo "${{ github.workspace }}/opt/cross/bin" >> "$GITHUB_PATH"
+
+      - name: Build S compiler
+        run: make sc
+
+      - name: Build runtime libraries
+        run: make libs
 
       - name: Build kernel
         run: make kernel -j"$(nproc)"

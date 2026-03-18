@@ -1,16 +1,8 @@
 #include "include/libflame.h"
+#include <stdint.h>
 
 /* syscall is declared in libflame.h; used below to write to stdout */
 extern long syscall(long number, ...);
-
-/* ── Internal: format one conversion ─────────────────────────────────────── */
-
-static int emit_char(char **out, char *end, char c) {
-    if (!out) return 1;  /* counting only */
-    if (*out && *out < end) **out = c;
-    if (*out) (*out)++;
-    return 1;
-}
 
 typedef struct {
     char    *buf;   /* NULL = stdout */
@@ -174,7 +166,8 @@ int vsnprintf(char *buf, size_t n, const char *fmt, __builtin_va_list ap) {
 }
 
 int vsprintf(char *buf, const char *fmt, __builtin_va_list ap) {
-    return vsnprintf(buf, (size_t)-1, fmt, ap);
+    /* INT_MAX is a safe upper bound; no realistic sprintf fills 2 GiB */
+    return vsnprintf(buf, (size_t)0x7fffffff, fmt, ap);
 }
 
 int vprintf(const char *fmt, __builtin_va_list ap) {
