@@ -28,10 +28,26 @@ userspace/shell/pyre
 userspace/login/login
 
 # Compiled binaries (desktop)
+desktop/wm/ash-wm
 desktop/wm/ashwm
+desktop/panel/ash-panel
 desktop/panel/ashpanel
+desktop/fileman/scroll
 desktop/fileman/ashfileman
+desktop/control/forge
 desktop/control/ashcontrol
+desktop/sessionmgr/sessionmgr
+
+# Compiled binaries (tests)
+tests/kernel/test_pmm
+tests/kernel/test_vmm
+
+# S language compiler and example binaries (build artifacts)
+tools/s-lang/sc
+tools/s-lang/examples/hello
+tools/s-lang/examples/fibonacci
+tools/s-lang/examples/kernel-demo
+tools/s-lang/tests/test_sc
 
 # Object files
 *.o

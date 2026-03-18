@@ -18,9 +18,7 @@ static int     win_count = 0;
 static u32     next_win_id = 1;
 static bool    running = false;
 
-/* Keyboard/mouse state (read from /dev/input on real OS) */
-static s32 mouse_x = 0, mouse_y = 0;
-static u32 mouse_btns = 0;
+/* Keyboard/mouse state (read from /dev/input on real OS; unused in stub) */
 
 /* ── 8x16 bitmap font embedded (same as kernel) ───────────────────────────── */
 

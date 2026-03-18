@@ -13,18 +13,9 @@
 
 #define IPC_SOCKET_DIR  "/run/ipc"
 
-/* ── Build socket path from name ─────────────────────────────────────────── */
-
-static void make_path(const char *name, char *buf, int bufsz) {
-    snprintf(buf, bufsz, "%s/%s.sock", IPC_SOCKET_DIR, name);
-}
-
 /* ── ipc_listen ───────────────────────────────────────────────────────────── */
 
 int ipc_listen(const char *name) {
-    char path[256];
-    make_path(name, path, sizeof(path));
-
     int fd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (fd < 0) return -1;
 
@@ -32,12 +23,14 @@ int ipc_listen(const char *name) {
     int flags = fcntl(fd, F_GETFL);
     fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 
-    unlink(path);  /* Remove stale socket */
-
     struct sockaddr_un addr;
     memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, path, sizeof(addr.sun_path) - 1);
+    /* Build path directly into addr.sun_path (108 bytes on Linux) */
+    snprintf(addr.sun_path, sizeof(addr.sun_path),
+             "%s/%s.sock", IPC_SOCKET_DIR, name);
+
+    unlink(addr.sun_path);  /* Remove stale socket */
 
     if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
         close(fd); return -1;
@@ -63,16 +56,14 @@ int ipc_accept(int listen_fd, Channel *ch) {
 /* ── ipc_connect ──────────────────────────────────────────────────────────── */
 
 int ipc_connect(const char *name, Channel *ch) {
-    char path[256];
-    make_path(name, path, sizeof(path));
-
     int fd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (fd < 0) return -1;
 
     struct sockaddr_un addr;
     memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, path, sizeof(addr.sun_path) - 1);
+    snprintf(addr.sun_path, sizeof(addr.sun_path),
+             "%s/%s.sock", IPC_SOCKET_DIR, name);
 
     if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
         close(fd); return -1;
