@@ -14,7 +14,7 @@ static u16     slp_typb       = 0;
 
 #define EBDA_BASE    0x0009FC00ULL
 #define BIOS_BASE    0x000E0000ULL
-#define BIOS_END     0x000FFFFF ULL
+#define BIOS_END     0x000FFFFFULL
 
 static bool acpi_checksum(const u8 *ptr, u32 len) {
     u8 sum = 0;
