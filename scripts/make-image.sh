@@ -1,7 +1,7 @@
 #!/bin/bash
 # make-image.sh — Create PhoenixOS bootable disk image and ISO
 
-set -e
+set -eo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BUILD="$ROOT/build"
@@ -18,7 +18,6 @@ check_tool() { command -v "$1" &>/dev/null || { echo "Missing tool: $1"; exit 1;
 # ── Check prerequisites ───────────────────────────────────────────────────────
 check_tool grub-mkrescue
 check_tool mkfs.ext2
-check_tool mke2fs
 
 if [[ ! -f "$KERNEL" ]]; then
     echo "Kernel not found: $KERNEL"
@@ -48,9 +47,24 @@ fi
 info "Running grub-mkrescue..."
 grub-mkrescue -o "$ISO_OUT" "$ISO_DIR" -- \
     -volid "PHOENIXOS" \
-    -joliet on 2>&1 | tail -5
+    -joliet on
 
 info "ISO created: $ISO_OUT ($(du -sh "$ISO_OUT" | cut -f1))"
+
+# Verify the ISO is not empty and contains the kernel
+ISO_SIZE=$(stat -c%s "$ISO_OUT" 2>/dev/null || stat -f%z "$ISO_OUT")
+if [[ "$ISO_SIZE" -lt 1048576 ]]; then
+    echo "ERROR: ISO is suspiciously small (${ISO_SIZE} bytes). Build may have failed."
+    exit 1
+fi
+if command -v isoinfo &>/dev/null; then
+    if ! isoinfo -i "$ISO_OUT" -R -find -name ember.elf 2>/dev/null | grep -q ember.elf; then
+        echo "ERROR: ember.elf not found inside the ISO. Build may have failed."
+        exit 1
+    fi
+    info "Kernel verified inside ISO."
+fi
+info "ISO verification passed (size: $(du -sh "$ISO_OUT" | cut -f1))"
 
 # ── Build raw disk image ──────────────────────────────────────────────────────
 info "Building raw disk image (${DISK_SIZE_MB}MB)..."
