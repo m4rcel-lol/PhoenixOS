@@ -73,6 +73,10 @@ void console_init(void);
 void fb_init(u32 *addr, u32 width, u32 height, u32 pitch, u32 bpp);
 void pit_init(u32 frequency);
 void kb_init(void);
+void mouse_init(void);
+void gpu_init(void);
+void wifi_init(void);
+void bluetooth_init(void);
 void ext2_register(void);
 
 /* ── Idle task entry ──────────────────────────────────────────────────────── */
@@ -169,6 +173,22 @@ void kernel_start(u32 mb2_magic, u64 mb2_info) {
     /* ── Keyboard ── */
     printk("[kb  ] Initializing PS/2 keyboard...\n");
     kb_init();
+
+    /* ── Mouse ── */
+    printk("[mouse] Initializing PS/2 mouse...\n");
+    mouse_init();
+
+    /* ── Graphics card ── */
+    printk("[gpu ] Probing PCI graphics card...\n");
+    gpu_init();
+
+    /* ── WiFi ── */
+    printk("[wifi] Probing WiFi adapter...\n");
+    wifi_init();
+
+    /* ── Bluetooth ── */
+    printk("[bt  ] Probing Bluetooth adapter...\n");
+    bluetooth_init();
 
     /* ── Syscall interface ── */
     printk("[sysc] Setting up SYSCALL/SYSRET...\n");
