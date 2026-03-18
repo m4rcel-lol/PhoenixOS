@@ -182,12 +182,63 @@ while (1) { sti(); hlt(); }
 
 Source: `userspace/init/kindle.c`
 
+Kindle is PhoenixOS's PID 1 init system. It displays an OpenRC-style startup
+animation on the console so the user can see each service being started and
+whether it succeeded or failed.
+
+### 5.1 Boot splash
+
+When Kindle starts it prints a coloured ASCII-art PhoenixOS banner to stdout:
+
+```
+  ██████╗ ██╗  ██╗ ██████╗ ███████╗███╗  ██╗██╗██╗  ██╗ ██████╗ ███████╗
+  ...
+  PhoenixOS — Kindle init v1.0   (custom UNIX-like OS)
+```
+
+### 5.2 Filesystem mounts
+
+Before reading any service files Kindle mounts the three essential virtual
+filesystems and prints a status line for each:
+
+```
+ [ * ] Starting proc filesystem ...                   [ ok ]
+ [ * ] Starting sysfs filesystem ...                  [ ok ]
+ [ * ] Starting devtmpfs ...                          [ ok ]
+```
+
+### 5.3 Service startup animation
+
 1. Reads service definitions from `/etc/kindle/services/*.svc`
 2. Performs dependency-ordered startup
-3. Starts core services: `phx-svcmon`, TTY manager, network daemon
-4. Detects whether to start a **console session** or **desktop session**
-   - Console: launches `login` on `/dev/tty0`, which runs PyreShell
-   - Desktop: launches the session manager
+3. For each service being started a line is printed before forking:
+
+   ```
+    [ * ] Starting phx-svcmon ...                     [ ok ]
+    [ * ] Starting tty-manager ...                    [FAIL]
+   ```
+
+   - `[ ok ]` (green) — process forked and did not exit within 20 ms
+   - `[FAIL]` (red)  — fork failed, or process exited immediately (exec error)
+   - `[ !! ]` (yellow) — warning / skipped (used when reporting dependency waits)
+
+4. A summary info line is printed when all initial services have been launched:
+
+   ```
+     ~~   Loaded 4 service(s) from /etc/kindle/services
+     ~~   Kindle init complete — system is up
+   ```
+
+### 5.4 Supervision loop
+
+After the initial startup pass Kindle enters a supervision loop (`supervise()`),
+restarting services as configured by their `restart=` policy, and printing
+`[FAIL]` notices to the console whenever a supervised service exits unexpectedly.
+
+### 5.5 Session detection
+
+- Console: launches `login` on `/dev/tty0`, which runs PyreShell
+- Desktop: launches the session manager
 
 ---
 

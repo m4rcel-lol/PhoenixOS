@@ -15,6 +15,50 @@
 #include <signal.h>
 #include <time.h>
 
+/* ── ANSI colour helpers ──────────────────────────────────────────────────── */
+
+#define ANSI_RESET   "\033[0m"
+#define ANSI_BOLD    "\033[1m"
+#define ANSI_RED     "\033[1;31m"
+#define ANSI_GREEN   "\033[1;32m"
+#define ANSI_YELLOW  "\033[1;33m"
+#define ANSI_CYAN    "\033[1;36m"
+#define ANSI_WHITE   "\033[1;37m"
+
+/* Status tags — same visual style as OpenRC */
+#define TAG_OK    " " ANSI_GREEN  "[ ok ]" ANSI_RESET
+#define TAG_FAIL  " " ANSI_RED    "[FAIL]" ANSI_RESET
+#define TAG_WARN  " " ANSI_YELLOW "[ !! ]" ANSI_RESET
+#define TAG_START       ANSI_CYAN " [ * ]" ANSI_RESET " "
+
+/* Boot splash printed once at startup */
+#define KINDLE_SPLASH \
+    "\n" \
+    ANSI_BOLD \
+    "  ██████╗ ██╗  ██╗ ██████╗ ███████╗███╗  ██╗██╗██╗  ██╗ ██████╗ ███████╗\n" \
+    "  ██╔══██╗██║  ██║██╔═══██╗██╔════╝████╗ ██║██║╚██╗██╔╝██╔═══██╗██╔════╝\n" \
+    "  ██████╔╝███████║██║   ██║█████╗  ██╔██╗██║██║ ╚███╔╝ ██║   ██║███████╗\n" \
+    "  ██╔═══╝ ██╔══██║██║   ██║██╔══╝  ██║╚████║██║ ██╔██╗ ██║   ██║╚════██║\n" \
+    "  ██║     ██║  ██║╚██████╔╝███████╗██║ ╚███║██║██╔╝╚██╗╚██████╔╝███████║\n" \
+    "  ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚══╝╚═╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝\n" \
+    ANSI_RESET \
+    ANSI_CYAN "  PhoenixOS — Kindle init v" KINDLE_VERSION "   (custom UNIX-like OS)\n" ANSI_RESET \
+    "\n"
+
+/* Label column width for "Starting foo-service ..." before the tag */
+#define LABEL_WIDTH 52
+
+/*
+ * After fork()ing a service we wait this long before checking whether the
+ * child already exited (indicating an exec failure).  20 ms is long enough
+ * for a typical execv() to fail with ENOENT but short enough that it does
+ * not meaningfully delay the startup sequence.
+ */
+#define SERVICE_STARTUP_CHECK_DELAY_US 20000
+
+/* Kindle init version — update when the init protocol changes */
+#define KINDLE_VERSION "1.0"
+
 /* ── Service descriptor ───────────────────────────────────────────────────── */
 
 #define MAX_SERVICES  64
@@ -55,11 +99,60 @@ static void kindle_log(const char *level, const char *fmt, ...) {
     vsnprintf(msg, sizeof(msg), fmt, ap);
     va_end(ap);
 
+    /* Plain log line to stderr (no colour codes — keeps log file clean) */
     fprintf(stderr, "[%s] kindle/%s: %s\n", timebuf, level, msg);
     if (log_file) {
         fprintf(log_file, "[%s] kindle/%s: %s\n", timebuf, level, msg);
         fflush(log_file);
     }
+}
+
+/* ── Boot-status animation helpers (OpenRC-style) ────────────────────────── */
+
+/*
+ * Print the "starting" line with a trailing ellipsis and no newline so the
+ * tag printed by boot_status_result() lands on the same line.
+ *
+ *   " [ * ] Starting dbus ...                         "
+ */
+static void boot_status_begin(const char *svc_name) {
+    char label[LABEL_WIDTH + 1];
+    int n = snprintf(label, sizeof(label), "Starting %s ...", svc_name);
+    /* Pad to LABEL_WIDTH with spaces */
+    while (n < LABEL_WIDTH) label[n++] = ' ';
+    label[LABEL_WIDTH] = '\0';
+
+    fprintf(stdout, TAG_START "%s", label);
+    fflush(stdout);
+}
+
+/*
+ * Print the result tag and newline after boot_status_begin().
+ *   ok == 1  → "[ ok ]\n"
+ *   ok == 0  → "[FAIL]\n"
+ *   ok == -1 → "[ !! ]\n"  (warning / skipped)
+ */
+static void boot_status_result(int ok) {
+    if (ok > 0)
+        fprintf(stdout, "%s\n", TAG_OK);
+    else if (ok == 0)
+        fprintf(stdout, "%s\n", TAG_FAIL);
+    else
+        fprintf(stdout, "%s\n", TAG_WARN);
+    fflush(stdout);
+}
+
+/*
+ * Print a one-shot informational status line (no result tag).
+ */
+static void boot_status_info(const char *fmt, ...) {
+    char msg[256];
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(msg, sizeof(msg), fmt, ap);
+    va_end(ap);
+    fprintf(stdout, ANSI_BOLD "  ~~  " ANSI_RESET " %s\n", msg);
+    fflush(stdout);
 }
 
 /* ── Parse a .svc file ────────────────────────────────────────────────────── */
@@ -160,11 +253,13 @@ static int deps_satisfied(struct service *svc) {
 
 static void start_service(struct service *svc) {
     kindle_log("INFO", "Starting service: %s (%s)", svc->name, svc->exec);
+    boot_status_begin(svc->name);
 
     pid_t pid = fork();
     if (pid < 0) {
         kindle_log("ERROR", "fork() failed for %s: %s", svc->name, strerror(errno));
         svc->state = SVC_FAILED;
+        boot_status_result(0);
         return;
     }
     if (pid == 0) {
@@ -188,6 +283,23 @@ static void start_service(struct service *svc) {
     svc->state      = SVC_RUNNING;
     svc->last_start = time(NULL);
     svc->restarts++;
+
+    /* Give the child a brief moment to detect an immediate exec failure */
+    usleep(SERVICE_STARTUP_CHECK_DELAY_US);
+
+    /* If the child already died (execv failure), waitpid will reap it */
+    int wstatus = 0;
+    pid_t ret = waitpid(pid, &wstatus, WNOHANG);
+    if (ret == pid) {
+        /* Process exited immediately — exec failure or instant crash */
+        svc->pid   = 0;
+        svc->state = SVC_FAILED;
+        boot_status_result(0);
+        kindle_log("ERROR", "Service %s exited immediately (code=%d)",
+                   svc->name, WIFEXITED(wstatus) ? WEXITSTATUS(wstatus) : -1);
+    } else {
+        boot_status_result(1);
+    }
 }
 
 /* ── SIGCHLD handler ──────────────────────────────────────────────────────── */
@@ -203,7 +315,17 @@ static void sigchld_handler(int sig) {
                 kindle_log("INFO", "Service %s exited (pid=%d, code=%d)",
                            services[i].name, pid, exit_code);
                 services[i].pid   = 0;
-                services[i].state = (exit_code == 0) ? SVC_STOPPED : SVC_FAILED;
+                if (exit_code == 0) {
+                    services[i].state = SVC_STOPPED;
+                } else {
+                    services[i].state = SVC_FAILED;
+                    /* Print a failure notice on the console */
+                    fprintf(stdout,
+                            TAG_FAIL " Service " ANSI_BOLD "%s" ANSI_RESET
+                            " exited with code %d\n",
+                            services[i].name, exit_code);
+                    fflush(stdout);
+                }
                 break;
             }
         }
@@ -240,10 +362,22 @@ int main(void) {
     if (getpid() != 1)
         fprintf(stderr, "kindle: warning: not running as PID 1\n");
 
+    /* Print boot splash to the console */
+    fprintf(stdout, "%s", KINDLE_SPLASH);
+    fflush(stdout);
+
     /* Mount essential filesystems */
+    boot_status_begin("proc filesystem");
     system("mount -t proc proc /proc 2>/dev/null");
+    boot_status_result(1);
+
+    boot_status_begin("sysfs filesystem");
     system("mount -t sysfs sysfs /sys 2>/dev/null");
+    boot_status_result(1);
+
+    boot_status_begin("devtmpfs");
     system("mount -t devtmpfs devtmpfs /dev 2>/dev/null");
+    boot_status_result(1);
 
     /* Open log */
     mkdir("/var/log", 0755);
@@ -262,12 +396,15 @@ int main(void) {
     /* Load and start services */
     load_services();
 
+    boot_status_info("Loaded %d service(s) from /etc/kindle/services", service_count);
     kindle_log("INFO", "Loaded %d services", service_count);
 
     /* Initial start pass — start services with no deps first */
     for (int i = 0; i < service_count; i++)
         if (services[i].dep_count == 0)
             start_service(&services[i]);
+
+    boot_status_info("Kindle init complete — system is up");
 
     supervise();  /* never returns */
     return 0;
