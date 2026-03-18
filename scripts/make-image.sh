@@ -58,7 +58,7 @@ if [[ "$ISO_SIZE" -lt 1048576 ]]; then
     exit 1
 fi
 if command -v isoinfo &>/dev/null; then
-    if ! isoinfo -i "$ISO_OUT" -R -find -name ember.elf 2>/dev/null | grep -q ember.elf; then
+    if ! isoinfo -i "$ISO_OUT" -R -l 2>/dev/null | grep -q ember.elf; then
         echo "ERROR: ember.elf not found inside the ISO. Build may have failed."
         exit 1
     fi
