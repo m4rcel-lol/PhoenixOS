@@ -3,6 +3,10 @@
 #include "../../lib/libgui/include/gui.h"
 #include "../../lib/libipc/include/ipc.h"
 
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <linux/fb.h>
+#include <sys/mman.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
