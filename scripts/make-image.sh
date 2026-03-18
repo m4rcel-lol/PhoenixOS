@@ -48,7 +48,7 @@ fi
 info "Running grub-mkrescue..."
 grub-mkrescue -o "$ISO_OUT" "$ISO_DIR" -- \
     -volid "PHOENIXOS" \
-    -joliet -rock 2>&1 | tail -5
+    -joliet 2>&1 | tail -5
 
 info "ISO created: $ISO_OUT ($(du -sh "$ISO_OUT" | cut -f1))"
 
