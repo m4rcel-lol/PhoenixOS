@@ -41,6 +41,7 @@ desktop/sessionmgr/sessionmgr
 # Compiled binaries (tests)
 tests/kernel/test_pmm
 tests/kernel/test_vmm
+tests/kernel/test_drivers
 
 # S language compiler and example binaries (build artifacts)
 tools/s-lang/sc

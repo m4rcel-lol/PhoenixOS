@@ -22,11 +22,16 @@ C_SRCS := \
     arch/x86_64/gdt.c \
     arch/x86_64/idt.c \
     arch/x86_64/interrupts.c \
+    drivers/pci/pci.c \
     drivers/timer/pit.c \
     drivers/tty/serial.c \
     drivers/tty/console.c \
     drivers/fb/framebuffer.c \
+    drivers/fb/gpu.c \
     drivers/input/keyboard.c \
+    drivers/input/mouse.c \
+    drivers/net/wifi.c \
+    drivers/net/bluetooth.c \
     sched/scheduler.c \
     syscall/syscall.c \
     ipc/pipe.c \
