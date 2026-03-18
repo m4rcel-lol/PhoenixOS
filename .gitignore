@@ -1,0 +1,42 @@
+# Build output
+build/
+*.iso
+*.img
+
+# Compiled binaries (userspace)
+userspace/coreutils/ls
+userspace/coreutils/cat
+userspace/coreutils/cp
+userspace/coreutils/mv
+userspace/coreutils/rm
+userspace/coreutils/mkdir
+userspace/coreutils/echo
+userspace/coreutils/pwd
+userspace/coreutils/hostname
+userspace/coreutils/uname
+userspace/coreutils/ps
+userspace/coreutils/kill
+userspace/coreutils/head
+userspace/coreutils/tail
+userspace/coreutils/wc
+userspace/coreutils/touch
+userspace/coreutils/stat
+userspace/coreutils/df
+userspace/coreutils/mount
+userspace/init/kindle
+userspace/shell/pyre
+userspace/login/login
+
+# Compiled binaries (desktop)
+desktop/wm/ashwm
+desktop/panel/ashpanel
+desktop/fileman/ashfileman
+desktop/control/ashcontrol
+
+# Object files
+*.o
+*.a
+*.so
+
+# Kernel ELF
+kernel/ember.elf
