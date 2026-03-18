@@ -1,8 +1,8 @@
 # PhoenixOS
 
-**PhoenixOS** is a custom operating system built from scratch, featuring a Linux-derived monolithic kernel called **EmberKernel**, a retro Windows 1.0/3.0-inspired desktop environment called **AshDE**, and a complete userspace stack — all written in C and Rust.
+**PhoenixOS** is a custom **UNIX-like** operating system built from scratch, featuring a monolithic kernel called **EmberKernel**, a retro Windows 1.0/3.0-inspired desktop environment called **AshDE**, and a complete userspace stack — all written in C and Rust.
 
-This is **not a Linux distribution**. PhoenixOS uses its own kernel, init system, libc, shell, package format, and desktop environment.
+This is **not a Linux distribution** and it is **not a UNIX clone**. PhoenixOS draws design inspiration from UNIX (POSIX-compatible syscalls, fork/exec process model, hierarchical filesystem, shell pipeline) but uses its own original kernel, init system, libc, shell, package format, and desktop environment — none of which are derived from Linux, GNU, or any other UNIX project.
 
 ---
 
@@ -98,11 +98,26 @@ PhoenixOS/
 
 ---
 
+## Minimum Requirements
+
+| Component | Minimum |
+|-----------|---------|
+| CPU | x86_64 (64-bit) |
+| RAM | 64 MB |
+| Disk | 256 MB |
+| Display | BIOS VGA / UEFI GOP, 32 bpp |
+| Bootloader | GRUB2 (Multiboot2) |
+
+See [Hardware Requirements](docs/REQUIREMENTS.md) for full details, VirtualBox setup tips, and QEMU options.
+
+---
+
 ## Documentation
 
 - [Architecture Overview](docs/ARCHITECTURE.md)
 - [Boot Flow](docs/BOOTFLOW.md)
 - [Building](docs/BUILDING.md)
+- [Hardware Requirements](docs/REQUIREMENTS.md)
 - [Roadmap](docs/ROADMAP.md)
 - [GUI Design](docs/GUI_DESIGN.md)
 - [Contributing](docs/CONTRIBUTING.md)
