@@ -25,6 +25,9 @@
 
 /* ── Init ─────────────────────────────────────────────────────────────────── */
 
+/* Defined in printk.c — set to true once serial is ready for output */
+extern bool serial_ok;
+
 void serial_init(void) {
     outb(COM1_IER, 0x00);                    /* disable all interrupts */
     outb(COM1_LCR, LCR_DLAB);               /* enable divisor latch */
@@ -33,6 +36,7 @@ void serial_init(void) {
     outb(COM1_LCR, LCR_8N1);                /* 8N1, clear DLAB */
     outb(COM1_FCR, 0xC7);                   /* enable+clear FIFO, 14-byte threshold */
     outb(COM1_MCR, 0x0B);                   /* RTS+DTR+OUT2 */
+    serial_ok = true;                        /* enable printk serial output */
 }
 
 /* ── Transmit ─────────────────────────────────────────────────────────────── */

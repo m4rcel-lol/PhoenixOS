@@ -232,6 +232,7 @@ static int builtin_help(char **argv) {
     puts("  env          Show environment variables");
     puts("  set VAR=VAL  Set environment variable");
     puts("  history      Show command history");
+    puts("  install      Install PhoenixOS to a disk");
     puts("  exit [n]     Exit shell with code n");
     puts("  help         Show this help");
     return 0;
@@ -259,6 +260,52 @@ static int builtin_history(char **argv) {
         printf("%4d  %s\n", i + 1, history[idx]);
     }
     return 0;
+}
+
+static int builtin_install(char **argv) {
+    /* Launch the phoenix-install program */
+    char installer[512];
+    /* Search common locations */
+    const char *candidates[] = {
+        "/bin/phoenix-install",
+        "/usr/bin/phoenix-install",
+        "/sbin/phoenix-install",
+        NULL
+    };
+    installer[0] = '\0';
+    for (int i = 0; candidates[i]; i++) {
+        if (access(candidates[i], X_OK) == 0) {
+            strncpy(installer, candidates[i], sizeof(installer) - 1);
+            break;
+        }
+    }
+    if (installer[0] == '\0') {
+        fprintf(stderr, "pyre: install: phoenix-install not found\n");
+        fprintf(stderr, "pyre: install: ensure PhoenixOS was built with the installer\n");
+        return 1;
+    }
+
+    /* Build argv for execv */
+    char *exec_argv[64];
+    exec_argv[0] = installer;
+    int i = 1;
+    if (argv[1]) {
+        /* pass through any extra args (e.g. --help) */
+        for (; argv[i] && i < 63; i++)
+            exec_argv[i] = argv[i];
+    }
+    exec_argv[i] = NULL;
+
+    pid_t pid = fork();
+    if (pid == 0) {
+        execv(installer, exec_argv);
+        perror(installer);
+        _exit(1);
+    }
+    if (pid < 0) { perror("fork"); return 1; }
+    int status;
+    waitpid(pid, &status, 0);
+    return WIFEXITED(status) ? WEXITSTATUS(status) : 1;
 }
 
 /* ── Redirection and pipeline parser ─────────────────────────────────────── */
@@ -423,6 +470,7 @@ static int execute_line(char *line) {
         if (strcmp(cmd, "env")     == 0) return builtin_env(cmds[0].argv);
         if (strcmp(cmd, "set")     == 0) return builtin_set(cmds[0].argv);
         if (strcmp(cmd, "history") == 0) return builtin_history(cmds[0].argv);
+        if (strcmp(cmd, "install") == 0) return builtin_install(cmds[0].argv);
     }
 
     return execute_pipeline(cmds, ncmds);

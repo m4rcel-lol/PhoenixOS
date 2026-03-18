@@ -43,6 +43,17 @@ if [[ -d "$BUILD/userspace" ]]; then
     cp -r "$BUILD/userspace/"* "$ISO_DIR/bin/" 2>/dev/null || true
 fi
 
+# Copy installer binary if present
+for installer_path in \
+        "$ROOT/userspace/install/phoenix-install" \
+        "$BUILD/userspace/phoenix-install"; do
+    if [[ -f "$installer_path" ]]; then
+        cp "$installer_path" "$ISO_DIR/bin/phoenix-install"
+        info "Installer copied: $installer_path"
+        break
+    fi
+done
+
 # Build the ISO
 info "Running grub-mkrescue..."
 grub-mkrescue -o "$ISO_OUT" "$ISO_DIR" -- \

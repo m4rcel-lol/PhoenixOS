@@ -39,6 +39,7 @@ userspace:
 	$(MAKE) -C userspace/init
 	$(MAKE) -C userspace/shell
 	$(MAKE) -C userspace/login
+	$(MAKE) -C userspace/install
 
 # ── Rust services (optional — skipped if cargo is absent) ────────────────────
 services:
@@ -98,6 +99,7 @@ clean:
 	-$(MAKE) -C userspace/init clean
 	-$(MAKE) -C userspace/shell clean
 	-$(MAKE) -C userspace/login clean
+	-$(MAKE) -C userspace/install clean
 	-$(MAKE) -C desktop/wm clean
 	-$(MAKE) -C desktop/panel clean
 	-$(MAKE) -C desktop/fileman clean
