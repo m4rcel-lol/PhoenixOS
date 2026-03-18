@@ -1,4 +1,4 @@
-name: Build PhoenixOS ISO
+name: Build PhoenixOS VM Image
 
 on:
   push:
@@ -9,56 +9,11 @@ on:
     branches:
       - main
       - master
+  workflow_dispatch:
 
 jobs:
-  # ── S language compiler (host-only, no cross-compiler needed) ───────────────
-  sc-compiler:
-    name: Build S compiler & run tests
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Build sc compiler
-        run: make -C tools/s-lang
-
-      - name: Transpile examples
-        run: |
-          cd tools/s-lang
-          ./sc examples/hello.s       --emit-c > /dev/null
-          ./sc examples/fibonacci.s   --emit-c > /dev/null
-          ./sc examples/kernel-demo.s --emit-c > /dev/null
-          echo "All examples transpile OK"
-
-      - name: Build and run examples
-        run: make -C tools/s-lang examples test
-
-      - name: Run sc unit tests
-        run: |
-          cd tools/s-lang/tests
-          gcc -O2 -Wall -std=c11 -o test_sc test_sc.c
-          ./test_sc ../sc
-
-  # ── Kernel unit tests (host compiler, no cross-compiler needed) ─────────────
-  kernel-tests:
-    name: Kernel unit tests
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Run kernel unit tests
-        run: make test
-
-  # ── Full OS build (requires cross-compiler) ──────────────────────────────────
-  build:
-    name: Build ISO
+  build-vm-image:
+    name: Build VM Image (VirtualBox / VMware)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -87,10 +42,9 @@ jobs:
             libmpc-dev \
             libmpfr-dev \
             texinfo \
-            qemu-system-x86 \
-            genisoimage
+            qemu-utils
 
-      # ── Cross-compiler cache ───────────────────────────────────────────────
+      # ── Cross-compiler cache (shared with main build workflow) ─────────────
       - name: Cache x86_64-elf cross-compiler
         id: cache-cross
         uses: actions/cache@v4
@@ -181,38 +135,23 @@ jobs:
           fi
           echo "ISO size check passed."
 
-      - name: Boot smoke test (QEMU)
-        run: |
-          SERIAL_LOG=$(mktemp /tmp/phoenix-serial.XXXXXX.log)
-          echo "Running QEMU boot test (max 45 seconds)..."
-          # GRUB timeout=5s, so the kernel should boot and print output within 45s.
-          # Use '|| true' to tolerate QEMU exit codes from -no-reboot/-no-shutdown.
-          timeout 45 qemu-system-x86_64 \
-            -m 256M \
-            -cdrom phoenix.iso \
-            -boot d \
-            -serial file:"$SERIAL_LOG" \
-            -display none \
-            -no-reboot \
-            -no-shutdown \
-          || true
-          echo "=== Serial output ==="
-          cat "$SERIAL_LOG" || true
-          echo "=== End serial output ==="
-          if grep -qE "EmberKernel|PhoenixOS|ember|boot" "$SERIAL_LOG" 2>/dev/null; then
-            echo "Boot smoke test PASSED — kernel output detected."
-          else
-            echo "ERROR: No kernel output detected in serial log."
-            echo "The kernel did not produce any output on the serial console."
-            echo "Check the GRUB config, kernel entry point, and boot assembly."
-            exit 1
-          fi
+      # ── VMDK disk image for VirtualBox / VMware ────────────────────────────
+      - name: Create VMDK virtual hard-drive image
+        run: sudo bash scripts/make-vm-image.sh
 
-      # ── Artifact ───────────────────────────────────────────────────────────
-      - name: Upload phoenix.iso
+      # ── Artifacts ──────────────────────────────────────────────────────────
+      - name: Upload bootable ISO
         uses: actions/upload-artifact@v4
         with:
-          name: PhoenixOS-ISO
+          name: PhoenixOS-VM-ISO
           path: phoenix.iso
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload VMDK disk image
+        uses: actions/upload-artifact@v4
+        with:
+          name: PhoenixOS-VMDK
+          path: phoenix.vmdk
           if-no-files-found: error
           retention-days: 30

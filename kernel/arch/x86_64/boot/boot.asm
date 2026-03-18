@@ -28,6 +28,15 @@ mb2_header:
     dd  0                                   ; height (0 = no preference)
     dd  32                                  ; depth  (32 bpp)
 
+    ; Entry address tag — tell GRUB the PHYSICAL address to jump to.
+    ; GRUB runs in 32-bit protected mode and cannot reach the higher-half
+    ; virtual address stored in the ELF e_entry field; this tag overrides it.
+    align 8
+    dw  3                                   ; type = entry_address
+    dw  0                                   ; flags (required = 0)
+    dd  12                                  ; size
+    dd  _start - KERNEL_VBASE               ; physical entry point
+
     ; End tag
     align 8
     dw  0                                   ; type = end
