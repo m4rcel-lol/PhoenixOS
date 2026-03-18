@@ -1,4 +1,5 @@
 #include "../../include/kernel.h"
+#include "../../include/mm.h"
 #include "../../include/acpi.h"
 #include "../../arch/x86_64/include/asm.h"
 
