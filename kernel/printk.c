@@ -13,9 +13,9 @@
 #define LSR_THRE    0x20    /* Transmit Holding Register Empty */
 #define LSR_DR      0x01    /* Data Ready */
 
-/* ── VGA colors (for future color support in printk) ─────────────────────── */
+/* ── Serial ready flag (set by serial_init in drivers/tty/serial.c) ─────── */
 
-static bool serial_ok = false;
+bool serial_ok = false;
 
 /* Forward declaration for console output */
 extern void console_putc(char c);

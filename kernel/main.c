@@ -6,6 +6,23 @@
 #include "include/fs.h"
 #include "include/syscall.h"
 
+/* ── Boot parameters parsed from GRUB cmdline ─────────────────────────────── */
+
+bool boot_nodesktop = false;  /* set when "nodesktop" appears on cmdline */
+
+static bool strstr_simple(const char *haystack, const char *needle) {
+    if (!haystack || !needle) return false;
+    usize nl = 0;
+    while (needle[nl]) nl++;
+    for (; *haystack; haystack++) {
+        usize i;
+        for (i = 0; i < nl; i++)
+            if (haystack[i] != needle[i]) break;
+        if (i == nl) return true;
+    }
+    return false;
+}
+
 /* ── Boot info passed by GRUB (multiboot2) ────────────────────────────────── */
 
 #define MB2_MAGIC            0x36d76289U
@@ -127,6 +144,8 @@ void kernel_start(u32 mb2_magic, u64 mb2_info) {
         } else if (tag->type == MB2_TAG_CMDLINE) {
             struct mb2_tag_string *st = (struct mb2_tag_string *)tag;
             early_printk("[boot] cmdline: %s\n", st->string);
+            if (strstr_simple(st->string, "nodesktop"))
+                boot_nodesktop = true;
         }
         /* Tags are 8-byte aligned */
         tag_ptr += ALIGN_UP(tag->size, 8);
@@ -207,6 +226,10 @@ void kernel_start(u32 mb2_magic, u64 mb2_info) {
     __asm__ volatile("sti");
 
     printk("[boot] Kernel initialization complete. Launching PID 1 (Kindle)...\n");
+    if (boot_nodesktop)
+        printk("[boot] Boot mode: shell (nodesktop)\n");
+    else
+        printk("[boot] Boot mode: desktop\n");
 
     /* Create PID 1 — the Kindle init process */
     /* In a real system this would execve /sbin/kindle */
